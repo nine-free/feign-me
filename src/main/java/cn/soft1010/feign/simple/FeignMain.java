@@ -1,64 +1,44 @@
+package cn.soft1010.feign.simple;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import feign.*;
+import feign.codec.Decoder;
+import feign.codec.EncodeException;
+import feign.codec.Encoder;
 
-## feign 源码解析
-_author:zhangjifu
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
 
-**源码地址**
+/**
+ * Created by bjzhangjifu on 2018/8/23.
+ */
+public class FeignMain {
 
+    public static void main(String[] args) {
 
-[feign github 托管地址](https://github.com/OpenFeign/feign)
+        /**
+         * 无参数直接请求
+         */
+        BAIDUAPI api = Feign.builder().target(BAIDUAPI.class, "https://www.baidu.com");
+        System.out.println(api.index());
 
+        println();
 
-**学习代码**
+        /**
+         * url包含参数
+         */
+        SougouAPI sougouAPI = Feign.builder().target(SougouAPI.class, "http://weixin.sogou.com/sugg/ajaj_json.jsp");
+        String result = sougouAPI.sougou("feign", System.currentTimeMillis());
+        System.out.println(result);
+        println();
 
-
-[学习实例](https://github.com/nine-free/feign-me)
-
-###  feign 是什么
-```
-通过注解注入一个模板化请求进行工作java http 客户端
-
-```
-
-### feign 使用
-maven依赖
-```
-<dependency>
-    <groupId>com.netflix.feign</groupId>
-    <artifactId>feign-core</artifactId>
-    <version>8.18.0</version>
-    <scope>runtime</scope>
-</dependency>
-
-```
-1. 基本用法  (无参数访问百度首页)
-```
-BAIDUAPI api = Feign.builder().target(BAIDUAPI.class,"https://www.baidu.com");
-String result = api.index();
-
-```
-```
-    interface BAIDUAPI {
-        @RequestLine("GET /")
-        String index();
-    }
-```
-
-2. 带参数的get请求
-```
-SougouAPI sougouAPI = Feign.builder().target(SougouAPI.class,"http://weixin.sogou.com/sugg/ajaj_json.jsp");
-String result = sougouAPI.sougou("feign", System.currentTimeMillis());
-```
-```
-interface SougouAPI {
-        //        http://weixin.sogou.com/sugg/ajaj_json.jsp?key=feign&type=wxart&pr=web&t=1535020058746
-        @RequestLine("GET ?key={key}&type=wxart&pr=web&t={timestamp}")
-        String sougou(@Param(value = "key") String key, @Param(value = "timestamp") long timestamp);
-    }
-```
-3. 请求header && 请求json消息体
-```
- /**
+        /**
          * 包含header  body
          */
         TestHeader testHeader = Feign.builder().target(TestHeader.class, "http://crm3.netease.com");
@@ -71,26 +51,13 @@ interface SougouAPI {
         System.out.println(testHeader.test2("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw"));
         System.out.println(testHeader.test3("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw", body));
 
-```
-```
-@Headers({"Content-Type: application/json;charset=UTF-8", "TOKEN: {authToken}"})
-    interface TestHeader {
+        println();
 
-        @RequestLine("GET /route/crm-api/user/contacts/getAllDepList")
-        String test(@Param("authToken") String token);
-
-        @RequestLine("POST /route/crm-api/approval/rest/approval/cost/listApprovalStates")
-        String test2(@Param("authToken") String token);
-
-        @RequestLine("POST /route/crm-api/other/rest/costItems/queryCostItemList.do")
-        @Body("{jsonBody}")
-        String test3(@Param("authToken") String token, @Param("jsonBody") String jsonBody);
-    }
-```
-
-4. 复杂用法 拦截器 编码 解码 options(超时时间) 重试 日志
-```
-List<RequestInterceptor> requestInterceptors = new ArrayList<RequestInterceptor>();
+        /**
+         * 包含更多
+         * 拦截器 编码 解码 options(超时时间) 重试 日志
+         */
+        List<RequestInterceptor> requestInterceptors = new ArrayList<RequestInterceptor>();
         requestInterceptors.add(new MyRequestInterceptor());
         TestHeader testHeader2 = Feign.builder().
                 requestInterceptors(requestInterceptors).
@@ -103,29 +70,52 @@ List<RequestInterceptor> requestInterceptors = new ArrayList<RequestInterceptor>
                 target(TestHeader.class, "http://crm3.netease.com");
         System.out.println(testHeader2.test3("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw", body));
 
-```
-**RequestInterceptor 拦截器**
-```
+
+    }
+
     static class MyRequestInterceptor implements RequestInterceptor {
         @Override
         public void apply(RequestTemplate template) {
             System.out.println("MyRequestInterceptor  " + System.currentTimeMillis() + " 发起请求" + template.url() + " " + new String(template.body()));
         }
     }
-```
 
-**encoder**
-```
-   static class MyEncoder extends Encoder.Default {
+    private static void println() {
+        System.out.println("-----------------------------");
+    }
+
+    interface BAIDUAPI {
+        @RequestLine("GET /")
+        String index();
+    }
+
+    interface SougouAPI {
+        //        http://weixin.sogou.com/sugg/ajaj_json.jsp?key=feign&type=wxart&pr=web&t=1535020058746
+        @RequestLine("GET ?key={key}&type=wxart&pr=web&t={timestamp}")
+        String sougou(@Param(value = "key") String key, @Param(value = "timestamp") long timestamp);
+    }
+
+    @Headers({"Content-Type: application/json;charset=UTF-8", "TOKEN: {authToken}"})
+    interface TestHeader {
+
+        @RequestLine("GET /route/crm-api/user/contacts/getAllDepList")
+        String test(@Param("authToken") String token);
+
+        @RequestLine("POST /route/crm-api/approval/rest/approval/cost/listApprovalStates")
+        String test2(@Param("authToken") String token);
+
+        @RequestLine("POST /route/crm-api/other/rest/costItems/queryCostItemList.do")
+        @Body("{jsonBody}")
+        String test3(@Param("authToken") String token, @Param("jsonBody") String jsonBody);
+    }
+
+    static class MyEncoder extends Encoder.Default {
         public void encode(Object o, Type type, RequestTemplate requestTemplate) throws EncodeException {
             System.out.println("MyEncoder " + type.toString() + "  " + o.toString());
         }
     }
 
-```
-**decoder**
-```
-  static class MyDecoder extends Decoder.Default {
+    static class MyDecoder extends Decoder.Default {
         public Object decode(Response response, Type type) throws IOException, FeignException {
             if (response.status() == 200) {
                 System.out.println("MyDecoder 请求成功");
@@ -133,10 +123,8 @@ List<RequestInterceptor> requestInterceptors = new ArrayList<RequestInterceptor>
             return super.decode(response, type);
         }
     }
-```
-**logger**
-```
-static class MyLogger extends Logger {
+
+    static class MyLogger extends Logger {
         @Override
         protected void log(String configKey, String format, Object... args) {
             System.out.println(String.format("MyLogger " + methodTag(configKey) + format + "%n", args));
@@ -148,10 +136,8 @@ static class MyLogger extends Logger {
             }
         }
     }
-```
-**retryer 重试机制**
-```
-static class MyRetryer implements Retryer {
+
+    static class MyRetryer implements Retryer {
 
         int maxAttempts;
         long period;
@@ -207,8 +193,4 @@ static class MyRetryer implements Retryer {
             return new MyRetryer(this.period, this.maxPeriod, this.maxAttempts);
         }
     }
-```
-
-
-注意：不同feign版本可能稍有不同 比如options构造方法 最新版本新增一个redirect参数
-
+}
