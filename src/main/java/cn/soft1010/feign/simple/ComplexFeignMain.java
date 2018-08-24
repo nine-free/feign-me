@@ -13,46 +13,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 
 /**
- * Created by bjzhangjifu on 2018/8/23.
+ * Created by bjzhangjifu on 2018/8/24.
  */
-public class FeignMain {
-
+public class ComplexFeignMain {
     public static void main(String[] args) {
 
-        /**
-         * 无参数直接请求
-         */
-        BAIDUAPI api = Feign.builder().target(BAIDUAPI.class, "https://www.baidu.com");
-        System.out.println(api.index());
-
-        println();
-
-        /**
-         * url包含参数
-         */
-        SougouAPI sougouAPI = Feign.builder().target(SougouAPI.class, "http://weixin.sogou.com/sugg/ajaj_json.jsp");
-        String result = sougouAPI.sougou("feign", System.currentTimeMillis());
-        System.out.println(result);
-        println();
-
-        /**
-         * 包含header  body
-         */
-        TestHeader testHeader = Feign.builder().target(TestHeader.class, "http://crm3.netease.com");
         Gson gson = new GsonBuilder().serializeNulls().create();
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("page", 1);
         params.put("pageSize", 10);
         String body = gson.toJson(params);
-        System.out.println(testHeader.test("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw"));
-        System.out.println(testHeader.test2("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw"));
-        System.out.println(testHeader.test3("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw", body));
-
-        println();
-
         /**
          * 包含更多
          * 拦截器 编码 解码 options(超时时间) 重试 日志
@@ -69,44 +41,14 @@ public class FeignMain {
                 logLevel(Logger.Level.BASIC).
                 target(TestHeader.class, "http://crm3.netease.com");
         System.out.println(testHeader2.test3("qFnUFs5k__3NRAEjjqCK5Y9vCV4-i8H7XEYqIkqymb3zjeOjfQK47thg1C7DRpp1ifHt4vFoNr0E9oaQbJC3iw", body));
-
-
     }
+
 
     static class MyRequestInterceptor implements RequestInterceptor {
         @Override
         public void apply(RequestTemplate template) {
             System.out.println("MyRequestInterceptor  " + System.currentTimeMillis() + " 发起请求" + template.url() + " " + new String(template.body()));
         }
-    }
-
-    private static void println() {
-        System.out.println("-----------------------------");
-    }
-
-    interface BAIDUAPI {
-        @RequestLine("GET /")
-        String index();
-    }
-
-    interface SougouAPI {
-        //        http://weixin.sogou.com/sugg/ajaj_json.jsp?key=feign&type=wxart&pr=web&t=1535020058746
-        @RequestLine("GET ?key={key}&type=wxart&pr=web&t={timestamp}")
-        String sougou(@Param(value = "key") String key, @Param(value = "timestamp") long timestamp);
-    }
-
-    @Headers({"Content-Type: application/json;charset=UTF-8", "TOKEN: {authToken}"})
-    interface TestHeader {
-
-        @RequestLine("GET /route/crm-api/user/contacts/getAllDepList")
-        String test(@Param("authToken") String token);
-
-        @RequestLine("POST /route/crm-api/approval/rest/approval/cost/listApprovalStates")
-        String test2(@Param("authToken") String token);
-
-        @RequestLine("POST /route/crm-api/other/rest/costItems/queryCostItemList.do")
-        @Body("{jsonBody}")
-        String test3(@Param("authToken") String token, @Param("jsonBody") String jsonBody);
     }
 
     static class MyEncoder extends Encoder.Default {
@@ -129,6 +71,7 @@ public class FeignMain {
         protected void log(String configKey, String format, Object... args) {
             System.out.println(String.format("MyLogger " + methodTag(configKey) + format + "%n", args));
         }
+
         @Override
         protected void logRequest(String configKey, Level logLevel, Request request) {
             if (logLevel.equals(Level.BASIC)) {

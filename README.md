@@ -1,7 +1,6 @@
 
 
 ## feign 源码解析
-_author:zhangjifu
 
 **源码地址**
 
@@ -211,4 +210,43 @@ static class MyRetryer implements Retryer {
 
 
 注意：不同feign版本可能稍有不同 比如options构造方法 最新版本新增一个redirect参数
+
+
+
+###  feign 主要源码解析
+
+feign主要是将自己书写的带有注解的接口使用动态代理实例化之后发起http请求
+
+ 1、Feign.builder() 构建一个feign对象（包含多个组件 decoder encoder client retryer等）
+ 2、调用target方法 通过动态代理实例化一个接口类型的对象（其中target一个参数为接口type）
+ 3、使用实例化的接口对象调用具体方法
+ 
+ **主要注解**
+ ```
+ @RequestLine
+ @Headers
+ @Body
+ @Param
+ ...
+ 
+ ```
+**主要类**
+```
+Feign 入口
+ReflectiveFeign
+ReflectiveFeign.FeignInvocationHandler  放射实现
+
+```
+![image](https://note.youdao.com/yws/api/personal/file/0DE9A6C9B62B469EBBFA8BC0E37B5153?method=download&shareKey=8b26b728d92dc36b63bc28afcdaeeca9)
+
+
+
+
+
+
+
+
+
+
+
 
